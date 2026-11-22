@@ -85,16 +85,18 @@ Activities:
 
 ### 4. Project Schedule
 
-The following table shows the planned sequence of project activities. Exact dates and durations will be finalized according to the university deadline.
+The following table presents the estimated project schedule from initiation to final submission.
 
-| Phase | Activities | Planned Period |
-|---|---|---|
-| 1 | Project Initiation | To be decided |
-| 2 | Requirements Analysis | To be decided |
-| 3 | Planning and Design | To be decided |
-| 4 | System Development | To be decided |
-| 5 | Testing | To be decided |
-| 6 | Documentation and Submission | To be decided |
+| Phase | Activities | Start Date | End Date |
+|---|---|---|---|
+| 1 | Project Initiation | Nov 1, 2026 | Nov 5, 2026 |
+| 2 | Requirements Analysis | Nov 6, 2026 | Nov 11, 2026 |
+| 3 | Planning and Design | Nov 12, 2026 | Nov 20, 2026 |
+| 4 | System Development | Nov 21, 2026 | Dec 10, 2026 |
+| 5 | Testing | Dec 11, 2026 | Dec 17, 2026 |
+| 6 | Documentation and Final Submission | Dec 18, 2026 | Dec 22, 2026 |
+
+**Note:** These dates are estimated project planning dates. Activities already completed are reflected in the schedule, while remaining activities represent the planned timeline.
 
 ### 5. Team Responsibilities
 
