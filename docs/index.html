@@ -1,1 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lost Time — Know Where Your Time Goes</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⏱️</text></svg>" />
+  <link rel="stylesheet" href="style.css" />
+  <!-- Chart.js for Statistics & Lost-Time Analysis (SR-33) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
 
+  <!-- AUTHENTICATION VIEW (SR-01 to SR-06) -->
+  <div id="auth-screen" class="auth-container">
+    <div class="auth-card">
+      <div class="brand-header">
+        <div class="logo-badge">⏱️</div>
+        <h1>Lost Time</h1>
+        <p class="tagline">“Know where your time goes.”</p>
+      </div>
+
+      <div class="auth-tabs">
+        <button id="tab-login" class="active" onclick="switchAuthTab('login')">Login</button>
+        <button id="tab-register" onclick="switchAuthTab('register')">Register</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="login-email" placeholder="Enter your email" required />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="login-password" placeholder="Enter your password" required />
+        </div>
+        <p id="login-error" class="error-msg"></p>
+        <button type="submit" class="btn btn-primary full-width">Sign In</button>
+        <button type="button" class="btn btn-outline full-width" style="margin-top: 10px;" onclick="loginAsDemo()">
+          Quick Demo Account (Group C)
+        </button>
+      </form>
+
+      <!-- Register Form -->
+      <form id="register-form" class="hidden" onsubmit="handleRegister(event)">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="reg-name" placeholder="Enter your full name" required />
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="reg-email" placeholder="Enter your email" required />
+        </div>
+        <div class="form-group">
+          <label>Password (min 6 characters)</label>
+          <input type="password" id="reg-password" minlength="6" placeholder="Create password" required />
+        </div>
+        <p id="reg-error" class="error-msg"></p>
+        <button type="submit" class="btn btn-primary full-width">Create Account</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN APPLICATION VIEW -->
+  <div id="app-screen" class="app-layout hidden">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="logo-icon">⏱️</span>
+        <div>
+          <h2>Lost Time</h2>
+          <small>Group C • v1.2 AI</small>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-item active" data-page="dashboard" onclick="navigateTo('dashboard')">📊 Dashboard</button>
+        <button class="nav-item" data-page="tracker" onclick="navigateTo('tracker')">⏱️ Activity Tracker</button>
+        <button class="nav-item" data-page="planner" onclick="navigateTo('planner')">📅 Daily Planner</button>
+        <button class="nav-item" data-page="statistics" onclick="navigateTo('statistics')">📈 Statistics & Analysis</button>
+        <button class="nav-item" data-page="aicoach" onclick="navigateTo('aicoach')">🤖 AI Time Coach</button>
+        <button class="nav-item" data-page="profile" onclick="navigateTo('profile')">⚙️ Profile & Goals</button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-pill">
+          <strong id="sidebar-username">User</strong>
+          <span id="sidebar-email">user@email.com</span>
+        </div>
+        <button class="btn btn-danger full-width" onclick="handleLogout()">Logout</button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Top Bar -->
+      <header class="topbar">
+        <div>
+          <h1 id="page-title">Dashboard</h1>
+          <p id="page-subtitle">Overview of your daily productivity and lost time</p>
+        </div>
+
+        <div class="topbar-actions">
+          <!-- Notification Bell & Dropdown Panel (SR-46, SR-47) -->
+          <div class="notif-wrapper">
+            <button id="notif-bell-btn" class="notif-bell-btn" onclick="toggleNotifPanel()" title="Notifications">
+              🔔
+              <span id="notif-badge" class="notif-badge hidden">0</span>
+            </button>
+
+            <div id="notif-dropdown" class="notif-dropdown hidden">
+              <div class="notif-dropdown-header">
+                <strong>Notifications & Alerts</strong>
+                <button class="btn-link" onclick="clearAllNotifications()">Clear all</button>
+              </div>
+              <div id="notif-list" class="notif-list">
+                <p class="info-text" style="padding: 12px;">No notifications yet.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="date-filter">
+            <label for="selected-date">Date:</label>
+            <input type="date" id="selected-date" onchange="refreshAllViews()" />
+          </div>
+        </div>
+      </header>
+
+      <!-- Floating Toast Notification -->
+      <div id="toast-container" class="toast-container"></div>
+
+      <!-- Alert Banner for Lost Time Threshold (SR-47) -->
+      <div id="lost-time-banner" class="alert-banner hidden"></div>
+
+      <!-- 1. DASHBOARD PAGE (SR-07 to SR-13) -->
+      <section id="page-dashboard" class="page-section">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-label">Total Tracked Time</span>
+            <h2 id="dash-total">0m</h2>
+            <small>All recorded activities</small>
+          </div>
+          <div class="stat-card productive">
+            <span class="stat-label">Productive Time</span>
+            <h2 id="dash-productive">0m</h2>
+            <small id="dash-goal-status">Daily goal progress</small>
+          </div>
+          <div class="stat-card unproductive">
+            <span class="stat-label">Unproductive Time</span>
+            <h2 id="dash-unproductive">0m</h2>
+            <small>Rest, meals & neutral breaks</small>
+          </div>
+          <div class="stat-card lost">
+            <span class="stat-label">Identified Lost Time</span>
+            <h2 id="dash-lost">0m</h2>
+            <small id="dash-lost-limit">Major distractions</small>
+          </div>
+        </div>
+
+        <div class="two-col-grid">
+          <div class="card">
+            <div class="card-header">
+              <h3>Daily Activity Overview</h3>
+              <button class="btn btn-sm btn-primary" onclick="navigateTo('tracker')">+ Track Activity</button>
+            </div>
+            <div id="dash-activities-list" class="list-container"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3>Major Sources of Lost Time</h3>
+              <span class="badge badge-danger">Top Distractions</span>
+            </div>
+            <div id="dash-lost-sources" class="list-container"></div>
+
+            <hr class="divider" />
+            <div class="card-header">
+              <h3>Today's Planned Schedule</h3>
+              <button class="btn btn-sm btn-outline" onclick="navigateTo('planner')">Open Planner</button>
+            </div>
+            <div id="dash-planned-list" class="list-container"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. ACTIVITY TRACKER PAGE (SR-14 to SR-22) -->
+      <section id="page-tracker" class="page-section hidden">
+        <div class="card timer-box">
+          <span id="timer-status-badge" class="status-pill idle">IDLE</span>
+          <div id="timer-display" class="timer-clock">00:00:00</div>
+
+          <div class="timer-inputs">
+            <input type="text" id="timer-activity-name" placeholder="What are you doing? (e.g., Software Engineering Study)" />
+            <select id="timer-category">
+              <option value="Studying & Research|Productive|false">Studying & Research (Productive)</option>
+              <option value="Coding & Development|Productive|false">Coding & Development (Productive)</option>
+              <option value="Work & Assignments|Productive|false">Work & Assignments (Productive)</option>
+              <option value="Exercise & Health|Productive|false">Exercise & Health (Productive)</option>
+              <option value="Rest & Meals|Unproductive|false">Rest & Meals (Unproductive)</option>
+              <option value="Social Media & Scrolling|Lost|true">Social Media & Scrolling (Lost Time)</option>
+              <option value="Gaming & Random Videos|Lost|true">Gaming & Random Videos (Lost Time)</option>
+              <option value="Procrastination / Idle|Lost|true">Procrastination / Idle (Lost Time)</option>
+            </select>
+          </div>
+
+          <div class="timer-controls">
+            <button id="btn-start" class="btn btn-success" onclick="startTimer()">▶ Start</button>
+            <button id="btn-pause" class="btn btn-warning" onclick="pauseTimer()" disabled>⏸ Pause</button>
+            <button id="btn-resume" class="btn btn-primary" onclick="resumeTimer()" disabled>⏯ Resume</button>
+            <button id="btn-stop" class="btn btn-danger" onclick="stopTimer()" disabled>⏹ Stop & Save</button>
+          </div>
+          <p id="timer-message" class="info-text">
+            Formula: Active Duration = (End Time − Start Time) − Paused Intervals
+          </p>
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+          <div class="card-header">
+            <h3>Recorded Activities History</h3>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Activity</th>
+                  <th>Category</th>
+                  <th>Classification</th>
+                  <th>Start – End</th>
+                  <th>Paused</th>
+                  <th>Active Duration</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="activities-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. DAILY PLANNER PAGE (SR-23 to SR-29) -->
+      <section id="page-planner" class="page-section hidden">
+        <div class="card">
+          <h3>Schedule a Planned Activity</h3>
+          <form class="planner-form" onsubmit="addPlannedActivity(event)">
+            <input type="text" id="plan-name" placeholder="Activity Name (match tracked name for auto-compare)" required />
+            <input type="time" id="plan-start" required />
+            <input type="time" id="plan-end" required />
+            <select id="plan-priority">
+              <option value="High">High Priority</option>
+              <option value="Medium" selected>Medium Priority</option>
+              <option value="Low">Low Priority</option>
+            </select>
+            <button type="submit" class="btn btn-primary">+ Add Plan</button>
+          </form>
+          <p id="plan-error" class="error-msg"></p>
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+          <div class="card-header">
+            <h3>Planned vs. Actual Time Comparison (Variance)</h3>
+            <small>Variance = Actual Duration − Planned Duration</small>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Activity</th>
+                  <th>Time Slot</th>
+                  <th>Priority</th>
+                  <th>Planned</th>
+                  <th>Actual</th>
+                  <th>Variance</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="planner-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. STATISTICS & LOST-TIME ANALYSIS PAGE (SR-30 to SR-42) -->
+      <section id="page-statistics" class="page-section hidden">
+        <div class="card">
+          <div class="card-header">
+            <h3>Time Usage & Lost-Time Analysis</h3>
+            <div class="period-buttons">
+              <button class="btn btn-sm btn-primary" id="period-day" onclick="setStatsPeriod('day')">Daily</button>
+              <button class="btn btn-sm btn-outline" id="period-week" onclick="setStatsPeriod('week')">Weekly (7 Days)</button>
+              <button class="btn btn-sm btn-outline" id="period-month" onclick="setStatsPeriod('month')">Monthly (30 Days)</button>
+            </div>
+          </div>
+
+          <div class="charts-grid">
+            <div class="chart-wrapper">
+              <h4>Productive vs. Unproductive vs. Lost Time</h4>
+              <canvas id="pieChart"></canvas>
+            </div>
+            <div class="chart-wrapper">
+              <h4>Time Breakdown by Category (Minutes)</h4>
+              <canvas id="barChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+          <h3>Lost-Time Analysis Report</h3>
+          <div id="lost-analysis-report" class="analysis-box"></div>
+        </div>
+      </section>
+
+      <!-- 5. AI TIME COACH PAGE (HYBRID AI MODULE) -->
+      <section id="page-aicoach" class="page-section hidden">
+        <div class="card ai-hero-card">
+          <div class="card-header">
+            <div>
+              <h3>🤖 AI Productivity & Lost-Time Coach</h3>
+              <p class="info-text" style="margin-top: 4px;">
+                Analyzes your tracked activities and planned schedule to detect distraction patterns and optimize your day.
+              </p>
+            </div>
+            <span id="ai-mode-badge" class="badge badge-productive">Smart Built-in AI Ready</span>
+          </div>
+
+          <div class="ai-controls-bar">
+            <input type="text" id="ai-custom-question" placeholder="Optional: Ask AI a question (e.g., How can I reduce my social media time?)" />
+            <button id="btn-run-ai" class="btn btn-primary" onclick="runAiAnalysis()">✨ Analyze My Day with AI</button>
+          </div>
+
+          <details class="api-config-details">
+            <summary>🔑 Optional: Connect Live Google Gemini API Key (For Presentation / Live LLM Mode)</summary>
+            <div class="api-key-row">
+              <input type="password" id="gemini-api-key" placeholder="Paste Gemini API Key (AIza...) — stored locally in your browser only" />
+              <button type="button" class="btn btn-sm btn-success" onclick="saveGeminiKey()">Save Key</button>
+              <button type="button" class="btn btn-sm btn-outline" onclick="clearGeminiKey()">Clear</button>
+            </div>
+            <small class="info-text">
+              If no API key is provided, the system automatically uses its built-in Smart Heuristic AI Engine so it works offline and without configuration.
+            </small>
+          </details>
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+          <div class="card-header">
+            <h3>AI Diagnostic & Actionable Recommendations</h3>
+            <button class="btn btn-sm btn-outline" onclick="applyAiSuggestedPlan()">+ Auto-Add AI Focus Block to Planner</button>
+          </div>
+          <div id="ai-output-box" class="ai-response-area">
+            Click <strong>"Analyze My Day with AI"</strong> above to generate personalized insights based on your selected date's activities.
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. PROFILE, GOALS & NOTIFICATIONS PAGE (SR-43 to SR-47) -->
+      <section id="page-profile" class="page-section hidden">
+        <div class="two-col-grid">
+          <div class="card">
+            <h3>User Profile</h3>
+            <form onsubmit="saveProfile(event)">
+              <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="prof-name" required />
+              </div>
+              <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" id="prof-email" disabled />
+              </div>
+              <button type="submit" class="btn btn-primary">Save Profile</button>
+            </form>
+          </div>
+
+          <div class="card">
+            <h3>Daily Goals & Notification Settings</h3>
+            <form onsubmit="saveGoalsAndNotifications(event)">
+              <div class="form-group">
+                <label>Minimum Daily Productive Goal (minutes)</label>
+                <input type="number" id="goal-productive" min="10" max="1440" required />
+              </div>
+              <div class="form-group">
+                <label>Maximum Allowed Lost Time Alert Limit (minutes)</label>
+                <input type="number" id="goal-lost" min="1" max="1440" required />
+              </div>
+              <div class="form-group checkbox-row">
+                <input type="checkbox" id="notif-enabled" checked />
+                <label for="notif-enabled">Enable Lost-Time & Schedule Alerts</label>
+              </div>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px;">
+                <button type="submit" class="btn btn-success">Save Goals & Preferences</button>
+                <button type="button" class="btn btn-outline" onclick="requestBrowserPushPermission()">
+                  🔔 Enable Desktop Push Notifications
+                </button>
+                <button type="button" class="btn btn-outline" onclick="sendTestNotification()">
+                  Test Alert
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
